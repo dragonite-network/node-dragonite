@@ -1,0 +1,12 @@
+export const PROTOCOL_VERSION = 1
+export const MIN_SEND_WINDOW = 20
+export const MAX_FAST_RESEND_COUNT = 5
+export const MAX_SLOW_RESEND_MULT = 4
+export const INIT_RTT = 200
+export const RTT_MAX_VARIATION = 200
+export const RTT_UPDATE_INTERVAL_MS = 100
+export const RTT_RESEND_CORRECTION_INTERVAL_MS = 2000
+export const DEV_RTT_MULT = 4
+export const RTT_RESENDED_REFRESH_MAX_MULT = 1.5
+export const MIN_CLOSE_WAIT_MS = 100
+export const CLOSE_WAIT_RTT_MULT = 4
