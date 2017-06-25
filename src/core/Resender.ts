@@ -5,8 +5,8 @@ import Timer = NodeJS.Timer
 
 export interface ResendInfo {
   isExists: boolean
-  isResent: boolean
-  RTT: number
+  isResent?: boolean
+  RTT?: number
 }
 
 export class ResendItem {
@@ -14,8 +14,9 @@ export class ResendItem {
   sequence: number
   buffer: Buffer
   startTime: number = Date.now()
-  sendCount: number = 0
+  sendCount: number = 1
   timer: Timer
+  acked: boolean = false
   constructor (buffer: Buffer) {
     this.buffer = buffer
     this.sequence = ReliableMessage.getSequence(buffer)
@@ -26,10 +27,14 @@ export class ResendItem {
   }
   send () {
     this.timer = setTimeout(() => {
+      if (this.acked) { return }
       this.resender.dgn.sender.sendRaw(this.buffer)
       this.sendCount++
       this.send()
     }, this.resender.getNextSendDelay(this.sendCount))
+  }
+  ack () {
+    this.acked = true
   }
 }
 
@@ -47,9 +52,11 @@ export class Resender {
   addMessage (buffer: Buffer) {
     this.totalMessageCount++
     const resendItem = new ResendItem(buffer).bind(this)
+    resendItem.send()
     this.resendList.push(resendItem)
+    // console.log('prepare resend', resendItem.sequence)
   }
-  getNextSendDelay (count = 0, timeOffset = 0): number {
+  getNextSendDelay (count: number = 0, timeOffset: number = 0): number {
     const resendMult = count <= MAX_FAST_RESEND_COUNT ? 1
       : Math.min(count - MAX_FAST_RESEND_COUNT + 1, MAX_SLOW_RESEND_MULT)
     const dRTT = Math.max(DEV_RTT_MULT * this.dgn.rtt.devRTT, this.ackDelayCompensation)
@@ -63,14 +70,17 @@ export class Resender {
     const rs = this.resendList.filter(r => r.sequence === sequence)
     if (rs.length > 0) {
       const r = rs[0]
-      this.resendList.splice(this.resendList.indexOf(r), 1)
-      const ri: ResendInfo = {
+      const resendInfo: ResendInfo = {
         isExists: true,
         isResent: r.sendCount > 0,
         RTT:  Date.now() - r.startTime
       }
-      clearTimeout(r.timer)
-      return ri
+      r.ack()
+      return resendInfo
+    } else {
+      return {
+        isExists: false
+      }
     }
   }
 }

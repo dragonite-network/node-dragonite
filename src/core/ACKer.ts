@@ -5,13 +5,7 @@ import { DragoniteClient } from './Main'
 export class ACKer {
   dgn: DragoniteClient
   ackList: number[] = []
-  receivedSeqChanged: boolean = false
-  _receivedSeq: number = -1
-  get receivedSeq (): number { return this._receivedSeq }
-  set receivedSeq (val: number) {
-    this._receivedSeq = val
-    this.receivedSeqChanged = true
-  }
+  acceptedSeqChanged: boolean = false
   maxSeqCount: number = Math.floor((socketParams.packetSize - ACKMessage.headerSize) / 4)
   constructor (dgn: DragoniteClient) {
     this.dgn = dgn
@@ -20,15 +14,17 @@ export class ACKer {
   sendACK () {
     setInterval(() => {
       const seqList: number[] = []
-      if (this.ackList.length === 0 && this.receivedSeqChanged) {
-        this.receivedSeqChanged = false
-        this.dgn.sender.sendRaw(ACKMessage.create(this.receivedSeq, []))
+      if (this.ackList.length === 0 && this.acceptedSeqChanged) {
+        this.acceptedSeqChanged = false
+        const buf = ACKMessage.create(this.dgn.receiver.acceptedSeq, [])
+        this.dgn.sender.sendRaw(buf)
       } else {
         while (this.ackList.length > 0) {
           while (seqList.length < this.maxSeqCount && this.ackList.length > 0) {
             seqList.push(this.ackList.shift())
           }
-          this.dgn.sender.sendRaw(ACKMessage.create(this.receivedSeq, seqList))
+          const buf = ACKMessage.create(this.dgn.receiver.acceptedSeq, seqList)
+          this.dgn.sender.sendRaw(buf)
         }
       }
     }, socketParams.ackIntervalMS)

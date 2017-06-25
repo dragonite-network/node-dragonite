@@ -55,6 +55,5 @@ export class RTTController {
   setRTT (estimatedRTT: number, devRTT: number) {
     this.estimatedRTT = estimatedRTT
     this.devRTT = devRTT
-    console.log(estimatedRTT, devRTT)
   }
 }

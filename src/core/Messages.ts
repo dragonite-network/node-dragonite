@@ -7,6 +7,12 @@ export enum MessageType {
   HEARTBEAT = 3
 }
 
+export const reliableTypes = [
+  MessageType.DATA,
+  MessageType.CLOSE,
+  MessageType.HEARTBEAT
+]
+
 export interface IMessage {
   version: number,
   type: MessageType,
@@ -39,6 +45,9 @@ export const ReliableMessage = {
   },
   getSequence (buffer: Buffer): number {
     return buffer.readInt32BE(2)
+  },
+  check (type: MessageType): boolean {
+    return reliableTypes.includes(type)
   }
 }
 
@@ -60,7 +69,8 @@ export const DataMessage = {
     buffer.writeInt16BE(data.length, 6)
     buffer.fill(data, 8)
     return buffer
-  }
+  },
+  headerSize: 8
 }
 
 export interface ICloseMessage extends IReliableMessage {
@@ -84,7 +94,7 @@ export const CloseMessage = {
 }
 
 export interface IACKMessage extends IMessage {
-  receiveSeq: number
+  acceptedSeq: number
   seqList: number[]
 }
 
@@ -92,15 +102,15 @@ export const ACKMessage = {
   parse (buffer: Buffer): IACKMessage {
     return {
       ...Message.getHeader(buffer),
-      receiveSeq: buffer.readInt32BE(2),
+      acceptedSeq: buffer.readInt32BE(2),
       seqList: [...new Array(buffer.readInt16BE(6)).keys()].map(i => buffer.readInt32BE(8 + i * 4))
     }
   },
-  create (receiveSeq: number, seqList: number[]): Buffer {
+  create (receivedSeq: number, seqList: number[]): Buffer {
     const buffer = Buffer.alloc(8 + seqList.length * 4)
     buffer.writeInt8(PROTOCOL_VERSION, 0)
     buffer.writeInt8(MessageType.ACK, 1)
-    buffer.writeInt32BE(receiveSeq, 2)
+    buffer.writeInt32BE(receivedSeq, 2)
     buffer.writeInt16BE(seqList.length, 6)
     seqList.forEach((sequence, i) => {
       buffer.writeInt32BE(sequence, 8 + i * 4)
