@@ -17,6 +17,7 @@ export class ACKer {
       if (this.ackList.length === 0 && this.acceptedSeqChanged) {
         this.acceptedSeqChanged = false
         const buf = ACKMessage.create(this.dgn.receiver.acceptedSeq, [])
+        // console.log('send ack', this.dgn.receiver.acceptedSeq, [])
         this.dgn.sender.sendRaw(buf)
       } else {
         while (this.ackList.length > 0) {
@@ -24,12 +25,14 @@ export class ACKer {
             seqList.push(this.ackList.shift())
           }
           const buf = ACKMessage.create(this.dgn.receiver.acceptedSeq, seqList)
+          // console.log('send ack', this.dgn.receiver.acceptedSeq, seqList)
           this.dgn.sender.sendRaw(buf)
         }
       }
     }, socketParams.ackIntervalMS)
   }
   addACK (sequence: number) {
+    // console.log(sequence)
     if (!this.ackList.includes(sequence)) {
       this.ackList.push(sequence)
     }

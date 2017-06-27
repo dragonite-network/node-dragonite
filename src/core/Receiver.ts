@@ -8,12 +8,22 @@ import { DragoniteClient } from './Main'
 import { RemoteInfo } from 'dgram'
 import { socketParams } from './Paramaters'
 import { MIN_SEND_WINDOW } from './Constants'
+import { autobind } from 'core-decorators'
 
+interface ACKCallback {
+  maxSeq: number,
+  callback: Function
+}
+
+@autobind
 export class Receiver {
   dgn: DragoniteClient
-  remoteAckedConsecutiveSeq: number = -1
-  remoteAckedMaxSeq: number = -1
+  remoteAckedConsecutiveSeq: number = 0
+  remoteAckedMaxSeq: number = 0
   receiveMap: Map<number, Buffer> = new Map()
+  receivedSeq: number = 0
+  receiveWindow: Buffer[] = []
+  ackCallbacks: ACKCallback[] = []
   private _acceptedSeq: number = 0
   get acceptedSeq (): number { return this._acceptedSeq }
   set acceptedSeq (val: number) {
@@ -22,6 +32,7 @@ export class Receiver {
   }
   constructor (dgn: DragoniteClient) {
     this.dgn = dgn
+    this.dgn.stream._read = this.streamRead
   }
   handleMessage (buffer: Buffer, rinfo: RemoteInfo) {
     const type = Message.getHeader(buffer).type
@@ -40,17 +51,27 @@ export class Receiver {
     this.dgn.acker.addACK(sequence)
     this.receiveMap.set(sequence, buffer)
 
-    while (this.receiveMap.has(this.acceptedSeq + 1)) {
-      const buffer = this.receiveMap.get(this.acceptedSeq + 1)
-      this.receiveMap.delete(this.acceptedSeq + 1)
+    while (this.receiveMap.has(this.receivedSeq + 1)) {
+      const buffer = this.receiveMap.get(this.receivedSeq + 1)
+      this.receiveMap.delete(this.receivedSeq + 1)
       if (Message.getHeader(buffer).type === MessageType.DATA) {
-        if (this.dgn.reader.write(DataMessage.parse(buffer).data)) {
-          this.acceptedSeq++
-        }
+        this.receiveWindow.push(DataMessage.parse(buffer).data)
+        // console.log(DataMessage.parse(buffer).data)
+        this.streamRead()
       } else {
         this.acceptedSeq++
       }
-      console.log(this.acceptedSeq)
+      this.receivedSeq++
+    }
+  }
+  streamRead () {
+    const buf = this.receiveWindow.shift()
+    if (buf) {
+      if (this.dgn.stream.push(buf)) {
+        this.acceptedSeq++
+      } else {
+        this.receiveWindow.unshift(buf)
+      }
     }
   }
   handleACKMessage (msg: IACKMessage) {
@@ -63,6 +84,19 @@ export class Receiver {
       }
       this.dgn.rtt.pushResendInfo(this.dgn.resender.removeMessage(seq))
     })
+    this.ackCallbacks.forEach(ac => {
+      if (ac.maxSeq <= this.remoteAckedMaxSeq) {
+        ac.callback()
+      }
+      this.ackCallbacks.splice(this.ackCallbacks.indexOf(ac), 1)
+    })
+    // console.log()
+    // console.log('remote accepted seq:', msg.acceptedSeq, 'remote acked seq', this.remoteAckedMaxSeq)
+    if (this.checkWindowAvailable()) {
+      this.dgn.sender.limiter.resume()
+    } else {
+      this.dgn.sender.limiter.pause()
+    }
   }
   getProperWindow (passive: boolean): number {
     const mult = passive ? socketParams.passiveWindowMultiplier : socketParams.aggressiveWindowMultiplier

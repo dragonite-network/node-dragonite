@@ -1,12 +1,13 @@
 import { autobind } from 'core-decorators'
 import * as UDP from 'dgram'
-import { Limiter, Sender } from './Sender'
+import { Sender } from './Sender'
 import { Receiver } from './Receiver'
 import { ACKer } from './ACKer'
 import { Resender } from './Resender'
 import { RTTController } from './RTT'
 import { socketParams } from './Paramaters'
 import { Duplex, Readable, Transform, Writable } from 'stream'
+import { read } from 'fs'
 
 @autobind
 export class DragoniteClient {
@@ -20,8 +21,8 @@ export class DragoniteClient {
   resender: Resender
   rtt: RTTController
 
-  reader: DirectStream = new DirectStream()
-  writer: DirectStream = new DirectStream()
+  stream: Duplex = new Duplex()
+  // writer: Writable = new DirectStream()
 
   sendSeq: number = 0
   sendSpeed: number = 1 / 20
@@ -42,11 +43,12 @@ export class DragoniteClient {
     this.resender = new Resender(this, socketParams.resendMinDelayMS, socketParams.ackIntervalMS)
     this.rtt = new RTTController(this)
 
+    this.stream.on('data', chunk => {
+      console.log('stream recv', chunk)
+    })
     setTimeout(() => {
-      this.reader.on('data', chunk => {
-        console.log(chunk)
-      })
-    }, 5000)
+      this.stream.write(Buffer.alloc(1000, 'a'))
+    }, 2000)
 
     this.aliveDetect()
   }
@@ -70,16 +72,13 @@ export class DragoniteClient {
   }
 }
 
-class DirectStream extends Transform {
-  _transform (chunk: any, encoding: string, callback: Function) {
-    callback(null, chunk)
-  }
-}
+// class DirectStream extends Transform {
+//   _transform (chunk: any, encoding: string, callback: Function) {
+//     callback(null, chunk)
+//   }
+// }
 
-// const cli = new DragoniteClient('toby.moe', 9225)
-// setTimeout(() => {
-//   cli.sendAsync(Buffer.alloc(22222222, 'a')).then(() => {})
-// }, 1000)
+new DragoniteClient('toby.moe', 9226)
 
 // setTimeout(() => {
 //   const s = new DirectStream()
@@ -89,8 +88,24 @@ class DirectStream extends Transform {
 //   s.write('asdf')
 // }, 1000)
 
-const limiter = new Limiter()
-limiter.setAction((obj) => {
-  console.log(obj)
-})
-limiter.play()
+// const readable = new Readable()
+// let a = 0
+// readable._read = function () {
+//   console.log('?')
+//   if (!a) {
+//     readable.push('a')
+//     a++
+//   }
+// }
+// readable.on('data', chunk => {
+//   console.log(chunk)
+// })
+// readable.on('end', () => {
+//   console.log('end')
+// })
+// setTimeout(() => {
+//   a = 0
+//   console.log('resume')
+//   readable._read(0)
+//   setTimeout(() => {}, 5000)
+// }, 3000)
