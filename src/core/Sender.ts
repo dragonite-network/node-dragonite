@@ -1,6 +1,5 @@
 import { DataMessage, HeartbeatMessage, ReliableMessage } from './Messages'
 import { DragoniteSocket } from './Main'
-import { socketParams } from './Paramaters'
 import { Limiter } from './Limiter'
 import { autobind } from 'core-decorators'
 
@@ -8,11 +7,13 @@ import { autobind } from 'core-decorators'
 export class Sender {
   socket: DragoniteSocket
   limiter: Limiter<Buffer>
-  bufferSizePerMsg: number = socketParams.packetSize - DataMessage.headerSize
+  bufferSizePerMsg: number
   sendSeq: number = 0
   sendSpeed: number = 1 / 20
   constructor (socket: DragoniteSocket) {
     this.socket = socket
+    this.bufferSizePerMsg = this.socket.socketParams.packetSize - DataMessage.headerSize
+
     this.limiter = new Limiter(50)
     this.limiter.play()
     this.limiter.setAction(buffer => {
@@ -21,7 +22,7 @@ export class Sender {
     this.socket.stream._write = this.writeStream
   }
   sendRaw (buffer: Buffer) {
-    this.socket.socket.send(buffer, this.socket.remotePort, this.socket.remoteHost)
+    this.socket.udp.send(buffer, this.socket.remotePort, this.socket.remoteHost)
   }
   sendReliableMessage (buffer: Buffer) {
     ReliableMessage.setSequence(buffer, this.sendSeq)

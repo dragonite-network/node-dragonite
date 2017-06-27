@@ -6,7 +6,6 @@ import {
 } from './messages'
 import { DragoniteSocket } from './Main'
 import { RemoteInfo } from 'dgram'
-import { socketParams } from './Paramaters'
 import { MIN_SEND_WINDOW } from './Constants'
 import { autobind } from 'core-decorators'
 
@@ -97,8 +96,9 @@ export class Receiver {
     }
   }
   getProperWindow (passive: boolean): number {
-    const mult = passive ? socketParams.passiveWindowMultiplier : socketParams.aggressiveWindowMultiplier
-    const targetPPS = this.socket.sender.sendSpeed / socketParams.packetSize
+    const mult = passive ? this.socket.socketParams.passiveWindowMultiplier
+      : this.socket.socketParams.aggressiveWindowMultiplier
+    const targetPPS = this.socket.sender.sendSpeed / this.socket.socketParams.packetSize
     const currentRTT = this.socket.rtt.estimatedRTT
     const wnd = Math.floor(targetPPS * (currentRTT / 1000.0) * mult)
     return Math.max(wnd, MIN_SEND_WINDOW)

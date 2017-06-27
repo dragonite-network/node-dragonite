@@ -5,7 +5,7 @@ import { Receiver } from './Receiver'
 import { ACKer } from './ACKer'
 import { Resender } from './Resender'
 import { RTTController } from './RTT'
-import { socketParams } from './Paramaters'
+import { SocketParameters, socketParams } from './Paramaters'
 import { Duplex } from 'stream'
 import { EventEmitter } from 'events'
 
@@ -13,7 +13,8 @@ import { EventEmitter } from 'events'
 export class DragoniteSocket {
   remoteHost: string
   remotePort: number
-  socket: UDP.Socket
+  udp: UDP.Socket
+  socketParams: SocketParameters = socketParams
 
   sender: Sender
   receiver: Receiver
@@ -30,19 +31,19 @@ export class DragoniteSocket {
     this.remoteHost = host
     this.remotePort = port
 
-    this.socket = UDP.createSocket('udp4')
-    this.socket.on('error', (error) => {
+    this.udp = UDP.createSocket('udp4')
+    this.udp.on('error', (error) => {
       console.log(`client error:\n${error.stack}`)
     })
-    this.socket.on('message', (buffer, rinfo) => {
+    this.udp.on('message', (buffer, rinfo) => {
       this.receiver.handleMessage(buffer, rinfo)
     })
-    this.socket.bind()
+    this.udp.bind()
 
     this.sender = new Sender(this)
     this.receiver = new Receiver(this)
     this.acker = new ACKer(this)
-    this.resender = new Resender(this, socketParams.resendMinDelayMS, socketParams.ackIntervalMS)
+    this.resender = new Resender(this, this.socketParams.resendMinDelayMS, this.socketParams.ackIntervalMS)
     this.rtt = new RTTController(this)
 
     // Debug
