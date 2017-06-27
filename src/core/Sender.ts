@@ -1,6 +1,5 @@
-import { DataMessage, HeartbeatMessage, IDataMessage, ReliableMessage } from './Messages'
+import { DataMessage, HeartbeatMessage, ReliableMessage } from './Messages'
 import { DragoniteClient } from './Main'
-import { RateLimiter } from 'limiter'
 import { socketParams } from './Paramaters'
 import { Limiter } from './Limiter'
 import { autobind } from 'core-decorators'

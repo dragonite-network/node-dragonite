@@ -1,8 +1,8 @@
 import {
-  ACKMessage, CloseMessage, DataMessage, HeartbeatMessage, IACKMessage, ICloseMessage, IDataMessage, IHeartbeatMessage,
-  IReliableMessage, Message,
+  ACKMessage, DataMessage, IACKMessage,
+  Message,
   MessageType,
-  ReliableMessage, reliableTypes
+  ReliableMessage
 } from './messages'
 import { DragoniteClient } from './Main'
 import { RemoteInfo } from 'dgram'

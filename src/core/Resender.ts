@@ -1,6 +1,6 @@
 import { DEV_RTT_MULT, MAX_FAST_RESEND_COUNT, MAX_SLOW_RESEND_MULT } from './constants'
 import { DragoniteClient } from './Main'
-import { IReliableMessage, Message, ReliableMessage } from './Messages'
+import { ReliableMessage } from './Messages'
 import Timer = NodeJS.Timer
 
 export interface ResendInfo {

@@ -6,8 +6,7 @@ import { ACKer } from './ACKer'
 import { Resender } from './Resender'
 import { RTTController } from './RTT'
 import { socketParams } from './Paramaters'
-import { Duplex, Readable, Transform, Writable } from 'stream'
-import { read } from 'fs'
+import { Duplex } from 'stream'
 
 @autobind
 export class DragoniteClient {

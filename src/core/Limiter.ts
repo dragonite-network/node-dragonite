@@ -17,15 +17,7 @@ export class Limiter<ObjectType extends Object> {
   }
   put (...objects: ObjectType[]) {
     this.objects.push(...objects)
-    // this.callbacks.set(this.objects[this.objects.length - 1], Function)
   }
-  // putAsync (...objects: ObjectType[]): Promise<{}> {
-  //   return new Promise((resolve, reject) => {
-  //     this.put(objects, () => {
-  //       resolve()
-  //     })
-  //   })
-  // }
   play () {
     this.rl.removeTokens(1, (error, _) => {
       if (error) {
