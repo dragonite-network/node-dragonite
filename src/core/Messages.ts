@@ -94,7 +94,7 @@ export const CloseMessage = {
 }
 
 export interface IACKMessage extends IMessage {
-  acceptedSeq: number
+  consumedSeq: number
   seqList: number[]
 }
 
@@ -102,7 +102,7 @@ export const ACKMessage = {
   parse (buffer: Buffer): IACKMessage {
     return {
       ...Message.getHeader(buffer),
-      acceptedSeq: buffer.readInt32BE(2),
+      consumedSeq: buffer.readInt32BE(2),
       seqList: [...new Array(buffer.readInt16BE(6)).keys()].map(i => buffer.readInt32BE(8 + i * 4))
     }
   },

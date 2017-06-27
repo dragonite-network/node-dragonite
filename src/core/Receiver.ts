@@ -24,11 +24,11 @@ export class Receiver {
   receivedSeq: number = 0
   receiveWindow: Buffer[] = []
   ackCallbacks: ACKCallback[] = []
-  private _acceptedSeq: number = 0
-  get acceptedSeq (): number { return this._acceptedSeq }
-  set acceptedSeq (val: number) {
-    this._acceptedSeq = val
-    this.socket.acker.acceptedSeqChanged = true
+  private _consumedSeq: number = 0
+  get consumedSeq (): number { return this._consumedSeq }
+  set consumedSeq (val: number) {
+    this._consumedSeq = val
+    this.socket.acker.consumedSeqChanged = true
   }
   constructor (socket: DragoniteSocket) {
     this.socket = socket
@@ -58,7 +58,7 @@ export class Receiver {
         this.receiveWindow.push(DataMessage.parse(buffer).data)
         this.streamRead()
       } else {
-        this.acceptedSeq++
+        this.consumedSeq++
       }
       this.receivedSeq++
     }
@@ -67,7 +67,7 @@ export class Receiver {
     const buf = this.receiveWindow.shift()
     if (buf) {
       if (this.socket.stream.push(buf)) {
-        this.acceptedSeq++
+        this.consumedSeq++
       } else {
         this.receiveWindow.unshift(buf)
       }
@@ -75,8 +75,8 @@ export class Receiver {
   }
   handleACKMessage (msg: IACKMessage) {
     this.socket.setConnected()
-    if (msg.acceptedSeq > this.remoteAckedConsecutiveSeq) {
-      this.remoteAckedConsecutiveSeq = msg.acceptedSeq
+    if (msg.consumedSeq > this.remoteAckedConsecutiveSeq) {
+      this.remoteAckedConsecutiveSeq = msg.consumedSeq
     }
     msg.seqList.forEach(seq => {
       if (seq > this.remoteAckedMaxSeq) {
