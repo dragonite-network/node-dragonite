@@ -1,5 +1,5 @@
 import { DEV_RTT_MULT, MAX_FAST_RESEND_COUNT, MAX_SLOW_RESEND_MULT } from './constants'
-import { DragoniteClient } from './Main'
+import { DragoniteSocket } from './Main'
 import { ReliableMessage } from './Messages'
 import Timer = NodeJS.Timer
 
@@ -28,7 +28,7 @@ export class ResendItem {
   send () {
     this.timer = setTimeout(() => {
       if (this.acked) { return }
-      this.resender.dgn.sender.sendRaw(this.buffer)
+      this.resender.socket.sender.sendRaw(this.buffer)
       this.sendCount++
       this.send()
     }, this.resender.getNextSendDelay(this.sendCount))
@@ -39,13 +39,13 @@ export class ResendItem {
 }
 
 export class Resender {
-  dgn: DragoniteClient
+  socket: DragoniteSocket
   totalMessageCount = 0
   resendList: ResendItem[] = []
   ackDelayCompensation = 0
   minResendMS = 0
-  constructor (dgn: DragoniteClient, minResendMS: number, ackDelayCompensation: number) {
-    this.dgn = dgn
+  constructor (socket: DragoniteSocket, minResendMS: number, ackDelayCompensation: number) {
+    this.socket = socket
     this.minResendMS = minResendMS
     this.ackDelayCompensation = ackDelayCompensation
   }
@@ -59,8 +59,8 @@ export class Resender {
   getNextSendDelay (count: number = 0, timeOffset: number = 0): number {
     const resendMult = count <= MAX_FAST_RESEND_COUNT ? 1
       : Math.min(count - MAX_FAST_RESEND_COUNT + 1, MAX_SLOW_RESEND_MULT)
-    const dRTT = Math.max(DEV_RTT_MULT * this.dgn.rtt.devRTT, this.ackDelayCompensation)
-    let delay = (this.dgn.rtt.estimatedRTT + dRTT) * resendMult
+    const dRTT = Math.max(DEV_RTT_MULT * this.socket.rtt.devRTT, this.ackDelayCompensation)
+    let delay = (this.socket.rtt.estimatedRTT + dRTT) * resendMult
     if (delay < this.minResendMS) {
       delay = this.minResendMS
     }

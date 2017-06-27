@@ -1,31 +1,33 @@
 import { DataMessage, HeartbeatMessage, ReliableMessage } from './Messages'
-import { DragoniteClient } from './Main'
+import { DragoniteSocket } from './Main'
 import { socketParams } from './Paramaters'
 import { Limiter } from './Limiter'
 import { autobind } from 'core-decorators'
 
 @autobind
 export class Sender {
-  dgn: DragoniteClient
+  socket: DragoniteSocket
   limiter: Limiter<Buffer>
   bufferSizePerMsg: number = socketParams.packetSize - DataMessage.headerSize
-  constructor (dgn: DragoniteClient) {
-    this.dgn = dgn
+  sendSeq: number = 0
+  sendSpeed: number = 1 / 20
+  constructor (socket: DragoniteSocket) {
+    this.socket = socket
     this.limiter = new Limiter(50)
     this.limiter.play()
     this.limiter.setAction(buffer => {
       this.sendReliableMessage(buffer)
     })
-    this.dgn.stream._write = this.writeStream
+    this.socket.stream._write = this.writeStream
   }
   sendRaw (buffer: Buffer) {
-    this.dgn.socket.send(buffer, this.dgn.remotePort, this.dgn.remoteHost)
+    this.socket.socket.send(buffer, this.socket.remotePort, this.socket.remoteHost)
   }
   sendReliableMessage (buffer: Buffer) {
-    ReliableMessage.setSequence(buffer, this.dgn.sendSeq)
-    this.dgn.sendSeq++
+    ReliableMessage.setSequence(buffer, this.sendSeq)
+    this.sendSeq++
     this.sendRaw(buffer)
-    this.dgn.resender.addMessage(buffer)
+    this.socket.resender.addMessage(buffer)
     // console.log(ReliableMessage.getSequence(buffer))
   }
   sendHeartbeatMessage () {
@@ -50,10 +52,10 @@ export class Sender {
       }
     }
 
-    const unsentSeq = this.dgn.sendSeq
+    const unsentSeq = this.sendSeq
     this.limiter.put(...messages)
     return new Promise((resolve, reject) => {
-      this.dgn.receiver.ackCallbacks.push({
+      this.socket.receiver.ackCallbacks.push({
         maxSeq: unsentSeq + messages.length - 1,
         callback: () => {
           resolve()

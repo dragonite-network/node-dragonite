@@ -6,19 +6,19 @@ import {
   RTT_RESENDED_REFRESH_MAX_MULT,
   RTT_UPDATE_INTERVAL_MS
 } from './Constants'
-import { DragoniteClient } from './Main'
+import { DragoniteSocket } from './Main'
 import { ResendInfo } from './Resender'
 
 export class RTTController {
-  dgn: DragoniteClient
+  socket: DragoniteSocket
   estimatedRTTUpdateFactor: number = 0.125
   devRTTUpdateFactor: number = 0.25
   estimatedRTT: number = INIT_RTT
   devRTT: number = 0
   lastUpdate: number = 0
   continuousResendCount: number = 0
-  constructor (dgn: DragoniteClient) {
-    this.dgn = dgn
+  constructor (socket: DragoniteSocket) {
+    this.socket = socket
   }
   pushResendInfo (info: ResendInfo) {
     if (info.isExists) {
