@@ -1,5 +1,5 @@
 import { ACKMessage } from './Messages'
-import { DragoniteSocket } from './Main'
+import { DragoniteSocket } from './Socket'
 
 export class ACKer {
   socket: DragoniteSocket

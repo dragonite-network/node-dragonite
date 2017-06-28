@@ -1,5 +1,5 @@
 import { DEV_RTT_MULT, MAX_FAST_RESEND_COUNT, MAX_SLOW_RESEND_MULT } from './constants'
-import { DragoniteSocket } from './Main'
+import { DragoniteSocket } from './Socket'
 import { ReliableMessage } from './Messages'
 import Timer = NodeJS.Timer
 

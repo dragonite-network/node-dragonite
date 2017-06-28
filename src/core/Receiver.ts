@@ -4,7 +4,7 @@ import {
   MessageType,
   ReliableMessage
 } from './messages'
-import { DragoniteSocket } from './Main'
+import { DragoniteSocket } from './Socket'
 import { RemoteInfo } from 'dgram'
 import { MIN_SEND_WINDOW } from './Constants'
 import { autobind } from 'core-decorators'
@@ -33,7 +33,7 @@ export class Receiver {
     this.socket = socket
     this.socket.stream._read = this.streamRead
   }
-  handleMessage (buffer: Buffer, rinfo: RemoteInfo) {
+  handleMessage (buffer: Buffer) {
     const type = Message.getHeader(buffer).type
     if (type === MessageType.ACK) {
       return this.handleACKMessage(ACKMessage.parse(buffer))

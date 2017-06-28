@@ -6,7 +6,7 @@ import {
   RTT_RESENDED_REFRESH_MAX_MULT,
   RTT_UPDATE_INTERVAL_MS
 } from './Constants'
-import { DragoniteSocket } from './Main'
+import { DragoniteSocket } from './Socket'
 import { ResendInfo } from './Resender'
 
 export class RTTController {
