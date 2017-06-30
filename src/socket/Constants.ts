@@ -1,6 +1,6 @@
 export const PROTOCOL_VERSION = 1
 export const MIN_SEND_WINDOW = 20
-export const MAX_FAST_RESEND_COUNT = 5
+export const MAX_FAST_RESEND_COUNT = 3
 export const MAX_SLOW_RESEND_MULT = 4
 export const INIT_RTT = 200
 export const RTT_MAX_VARIATION = 200

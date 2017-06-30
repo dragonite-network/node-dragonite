@@ -1,10 +1,10 @@
 {
   "name": "dragonite-ts",
   "version": "1.0.0",
-  "main": "src/core/Main.ts",
+  "main": "src/socket/Main.ts",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node %NODE_DEBUG_OPTION% ."
+    "dev": "ts-node $NODE_DEBUG_OPTION ."
   },
   "devDependencies": {
     "@types/core-decorators": "^0.10.32",
