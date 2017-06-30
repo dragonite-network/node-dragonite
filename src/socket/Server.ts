@@ -5,6 +5,13 @@ import { Message, ReliableMessage } from './Messages'
 import { PROTOCOL_VERSION } from './Constants'
 import { EventEmitter } from 'events'
 
+export const ServerEvent = {
+  Close: 'close',
+  Connection: 'connection',
+  Error: 'error',
+  Listening: 'listening'
+}
+
 @autobind
 export class DragoniteServer {
   udp: UDP.Socket
@@ -15,7 +22,6 @@ export class DragoniteServer {
     this.udp.on('message', this.handleMessage)
     this.udp.bind(bindPort, bindHost)
   }
-
   handleMessage (buffer: Buffer, rinfo: UDP.RemoteInfo) {
     const connKey = getConnKey(rinfo.address, rinfo.port)
     if (this.connectionMap.has(connKey)) {
@@ -32,5 +38,8 @@ export class DragoniteServer {
       connection.receiver.handleMessage(buffer)
       this.eventEmitter.emit('connection', connection)
     }
+  }
+  on (event: string, listener: (...args: any[]) => void) {
+    this.eventEmitter.on(event, listener)
   }
 }

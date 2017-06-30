@@ -1,16 +1,16 @@
 import { PROTOCOL_VERSION } from './Constants'
 
 export enum MessageType {
-  DATA = 0,
-  CLOSE = 1,
-  ACK = 2,
-  HEARTBEAT = 3
+  Data = 0,
+  Close = 1,
+  Ack = 2,
+  Heartbeat = 3
 }
 
 export const reliableTypes = [
-  MessageType.DATA,
-  MessageType.CLOSE,
-  MessageType.HEARTBEAT
+  MessageType.Data,
+  MessageType.Close,
+  MessageType.Heartbeat
 ]
 
 export interface IMessage {
@@ -27,7 +27,7 @@ export const Message = {
     return {
       version: buffer.readInt8(0),
       type: buffer.readInt8(1),
-      ...buffer.readInt8(1) !== MessageType.ACK ? { sequence: buffer.readInt32BE(2) } : {}
+      ...buffer.readInt8(1) !== MessageType.Ack ? { sequence: buffer.readInt32BE(2) } : {}
     }
   }
 }
@@ -65,7 +65,7 @@ export const DataMessage = {
   create (data: Buffer): Buffer {
     const buffer = Buffer.alloc(8 + data.length)
     buffer.writeInt8(PROTOCOL_VERSION, 0)
-    buffer.writeInt8(MessageType.DATA, 1)
+    buffer.writeInt8(MessageType.Data, 1)
     buffer.writeInt16BE(data.length, 6)
     buffer.fill(data, 8)
     return buffer
@@ -87,7 +87,7 @@ export const CloseMessage = {
   create (status: number): Buffer {
     const buffer = Buffer.alloc(8)
     buffer.writeInt8(PROTOCOL_VERSION, 0)
-    buffer.writeInt8(MessageType.CLOSE, 1)
+    buffer.writeInt8(MessageType.Close, 1)
     buffer.writeInt16BE(status, 6)
     return buffer
   }
@@ -109,7 +109,7 @@ export const ACKMessage = {
   create (receivedSeq: number, seqList: number[]): Buffer {
     const buffer = Buffer.alloc(8 + seqList.length * 4)
     buffer.writeInt8(PROTOCOL_VERSION, 0)
-    buffer.writeInt8(MessageType.ACK, 1)
+    buffer.writeInt8(MessageType.Ack, 1)
     buffer.writeInt32BE(receivedSeq, 2)
     buffer.writeInt16BE(seqList.length, 6)
     seqList.forEach((sequence, i) => {
@@ -129,7 +129,7 @@ export const HeartbeatMessage = {
   create (): Buffer {
     const buffer = Buffer.alloc(6)
     buffer.writeInt8(PROTOCOL_VERSION, 0)
-    buffer.writeInt8(MessageType.HEARTBEAT, 1)
+    buffer.writeInt8(MessageType.Heartbeat, 1)
     return buffer
   }
 }

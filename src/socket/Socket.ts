@@ -9,6 +9,17 @@ import { SocketParameters, socketParams } from './Paramaters'
 import { Duplex } from 'stream'
 import { EventEmitter } from 'events'
 
+export const SocketEvent = {
+  Close: 'close',
+  Connect: 'connect',
+  Data: 'data',
+  Drain: 'drain',
+  End: 'end',
+  Error: 'error',
+  Lookup: 'lookup',
+  Timeout: 'timeout'
+}
+
 @autobind
 export class DragoniteSocket {
   remoteHost: string
@@ -30,21 +41,6 @@ export class DragoniteSocket {
   constructor (host: string, port: number) {
     this.remoteHost = host
     this.remotePort = port
-
-    // this.udp = UDP.createSocket('udp4')
-    // this.udp.on('error', (error) => {
-    //   console.log(`client error:\n${error.stack}`)
-    // })
-    // this.udp.on('message', (buffer, rinfo) => {
-    //   this.receiver.handleMessage(buffer, rinfo)
-    // })
-    // this.udp.bind()
-    //
-    // this.sender = new Sender(this, 1000)
-    // this.receiver = new Receiver(this)
-    // this.acker = new ACKer(this)
-    // this.resender = new Resender(this, this.socketParams.resendMinDelayMS, this.socketParams.ackIntervalMS)
-    // this.rtt = new RTTController(this)
   }
   setConnected () {
     if (!this.isConnected) {
@@ -54,5 +50,15 @@ export class DragoniteSocket {
   }
   start () {
     this.sender.aliveDetect()
+  }
+  on (event: string, listener: (...args: any[]) => void) {
+    if ([SocketEvent.Close, SocketEvent.Data, SocketEvent.Drain, SocketEvent.End].includes(event)) {
+      this.stream.on(event, listener)
+    } else {
+      this.eventEmitter.on(event, listener)
+    }
+  }
+  write (chunk: any, cb?: Function) {
+    this.stream.write(chunk, cb)
   }
 }

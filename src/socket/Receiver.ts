@@ -35,7 +35,7 @@ export class Receiver {
   }
   handleMessage (buffer: Buffer) {
     const type = Message.getHeader(buffer).type
-    if (type === MessageType.ACK) {
+    if (type === MessageType.Ack) {
       return this.handleACKMessage(ACKMessage.parse(buffer))
     }
     if (ReliableMessage.check(type)) {
@@ -53,7 +53,7 @@ export class Receiver {
     while (this.receiveMap.has(this.receivedSeq + 1)) {
       const buffer = this.receiveMap.get(this.receivedSeq + 1)
       this.receiveMap.delete(this.receivedSeq + 1)
-      if (Message.getHeader(buffer).type === MessageType.DATA) {
+      if (Message.getHeader(buffer).type === MessageType.Data) {
         this.receiveWindow.push(DataMessage.parse(buffer).data)
         this.streamRead()
       } else {
