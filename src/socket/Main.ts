@@ -19,5 +19,5 @@ cli.eventEmitter.on('connect', () => {
 const cli2 = new DragoniteClientSocket('localhost', 43210)
 cli2.eventEmitter.on('connect', () => {
   console.log('client 2: connected')
-  cli2.stream.write('Hello World! From Cli-2')
+  cli2.stream.write(Buffer.alloc(10000000, 99))
 })

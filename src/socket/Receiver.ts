@@ -17,7 +17,7 @@ interface ACKCallback {
 @autobind
 export class Receiver {
   socket: DragoniteSocket
-  remoteAckedConsecutiveSeq: number = 0
+  remoteConsumedSeq: number = 0
   remoteAckedMaxSeq: number = 0
   receiveMap: Map<number, Buffer> = new Map()
   receivedSeq: number = 0
@@ -74,8 +74,8 @@ export class Receiver {
   }
   handleACKMessage (msg: IACKMessage) {
     this.socket.setConnected()
-    if (msg.consumedSeq > this.remoteAckedConsecutiveSeq) {
-      this.remoteAckedConsecutiveSeq = msg.consumedSeq
+    if (msg.consumedSeq > this.remoteConsumedSeq) {
+      this.remoteConsumedSeq = msg.consumedSeq
     }
     msg.seqList.forEach(seq => {
       if (seq > this.remoteAckedMaxSeq) {
@@ -95,19 +95,14 @@ export class Receiver {
       this.socket.sender.limiter.pause()
     }
   }
-  getProperWindow (passive: boolean): number {
-    const mult = passive ? this.socket.socketParams.passiveWindowMultiplier
-      : this.socket.socketParams.aggressiveWindowMultiplier
+  getProperWindow (): number {
     const targetPPS = this.socket.sender.sendSpeed / this.socket.socketParams.packetSize
     const currentRTT = this.socket.rtt.estimatedRTT
-    const wnd = Math.floor(targetPPS * (currentRTT / 1000.0) * mult)
+    const wnd = Math.floor(targetPPS * (currentRTT / 1000) * this.socket.socketParams.windowMultiplier)
     return Math.max(wnd, MIN_SEND_WINDOW)
   }
   checkWindowAvailable (): boolean {
-    const aggressiveDelta = this.socket.sender.sendSeq - this.remoteAckedMaxSeq
-    const passiveDelta = this.socket.sender.sendSeq - this.remoteAckedConsecutiveSeq
-    const aggressiveOK = aggressiveDelta < this.getProperWindow(false)
-    const passiveOK = passiveDelta < this.getProperWindow(true)
-    return aggressiveOK && passiveOK
+    const delta = this.socket.sender.sendSeq - this.remoteConsumedSeq
+    return delta < this.getProperWindow()
   }
 }
