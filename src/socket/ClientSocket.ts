@@ -33,4 +33,13 @@ export class DragoniteClientSocket extends DragoniteSocket {
 
     this.start()
   }
+  destroy () {
+    if (this.isAlive) {
+      this.isAlive = false
+      this.sender.destroy()
+      this.resender.destroy()
+      this.acker.destroy()
+      this.udp.close()
+    }
+  }
 }

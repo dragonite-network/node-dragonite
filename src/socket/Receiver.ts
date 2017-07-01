@@ -10,7 +10,8 @@ import { MIN_SEND_WINDOW } from './Constants'
 import { autobind } from 'core-decorators'
 
 interface ACKCallback {
-  maxSeq: number,
+  maxSeq?: number,
+  receiveSeq?: number,
   callback: Function
 }
 
@@ -84,10 +85,11 @@ export class Receiver {
       this.socket.rtt.pushResendInfo(this.socket.resender.removeMessage(seq))
     })
     this.ackCallbacks.forEach(ac => {
-      if (ac.maxSeq <= this.remoteAckedMaxSeq) {
+      if ((ac.maxSeq && ac.maxSeq <= this.remoteAckedMaxSeq)
+          || (ac.receiveSeq && msg.seqList.includes(ac.receiveSeq))) {
         ac.callback()
+        this.ackCallbacks.splice(this.ackCallbacks.indexOf(ac), 1)
       }
-      this.ackCallbacks.splice(this.ackCallbacks.indexOf(ac), 1)
     })
     if (this.checkWindowAvailable()) {
       this.socket.sender.limiter.resume()

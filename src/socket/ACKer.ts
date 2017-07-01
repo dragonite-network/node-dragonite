@@ -1,11 +1,13 @@
 import { ACKMessage } from './Messages'
 import { DragoniteSocket } from './Socket'
+import Timer = NodeJS.Timer
 
 export class ACKer {
   socket: DragoniteSocket
   ackList: number[] = []
   consumedSeqChanged: boolean = false
   maxSeqCount: number
+  sendTimer: Timer
   constructor (socket: DragoniteSocket) {
     this.socket = socket
 
@@ -14,7 +16,7 @@ export class ACKer {
     this.sendACK()
   }
   sendACK () {
-    setInterval(() => {
+    this.sendTimer = setInterval(() => {
       const seqList: number[] = []
       if (this.ackList.length === 0 && this.consumedSeqChanged) {
         this.consumedSeqChanged = false
@@ -38,5 +40,8 @@ export class ACKer {
     if (!this.ackList.includes(sequence)) {
       this.ackList.push(sequence)
     }
+  }
+  destroy () {
+    clearInterval(this.sendTimer)
   }
 }

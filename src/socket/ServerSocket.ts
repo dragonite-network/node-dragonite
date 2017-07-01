@@ -18,6 +18,14 @@ export class DragoniteServerSocket extends DragoniteSocket {
     this.resender = new Resender(this, this.socketParams.resendMinDelayMS, this.socketParams.ackIntervalMS)
     this.rtt = new RTTController(this)
   }
+  destroy () {
+    if (this.isAlive) {
+      this.isAlive = false
+      this.sender.destroy()
+      this.resender.destroy()
+      this.acker.destroy()
+    }
+  }
 }
 
 export function getConnKey (host: string, port: number) {

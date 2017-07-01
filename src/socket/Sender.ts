@@ -1,7 +1,8 @@
-import { DataMessage, HeartbeatMessage, ReliableMessage } from './Messages'
+import { CloseMessage, DataMessage, HeartbeatMessage, ReliableMessage } from './Messages'
 import { DragoniteSocket } from './Socket'
 import { Limiter } from './Limiter'
 import { autobind } from 'core-decorators'
+import Timer = NodeJS.Timer
 
 @autobind
 export class Sender {
@@ -12,6 +13,7 @@ export class Sender {
   sendSpeed: number = 1 / 20
   heartbeatInterval: number = 1000
   sendRaw: (buffer: Buffer) => void
+  aliveTimer: Timer
   constructor (socket: DragoniteSocket, heartbeatInterval: number) {
     this.socket = socket
     this.heartbeatInterval = heartbeatInterval
@@ -25,15 +27,16 @@ export class Sender {
     this.socket.stream._write = this.writeStream
   }
   aliveDetect () {
-    setInterval(() => {
+    this.aliveTimer = setInterval(() => {
       this.sendHeartbeatMessage()
     }, this.heartbeatInterval)
   }
-  sendReliableMessage (buffer: Buffer) {
+  sendReliableMessage (buffer: Buffer): number {
     ReliableMessage.setSequence(buffer, this.sendSeq)
     this.sendSeq++
     this.sendRaw(buffer)
     this.socket.resender.addMessage(buffer)
+    return this.sendSeq
     // console.log(ReliableMessage.getSequence(buffer))
   }
   sendHeartbeatMessage () {
@@ -69,9 +72,19 @@ export class Sender {
       })
     })
   }
+  sendCloseMessage () {
+    const closeSeq = this.sendReliableMessage(CloseMessage.create(0))
+    this.socket.receiver.ackCallbacks.push({
+      receiveSeq: closeSeq,
+      callback: this.socket.onRemoteClose
+    })
+  }
   writeStream (chunk: any, encoding: string, callback: Function) {
     this.sendDataMessage(Buffer.from(chunk)).then(() => {
       callback()
     })
+  }
+  destroy () {
+    clearInterval(this.aliveTimer)
   }
 }

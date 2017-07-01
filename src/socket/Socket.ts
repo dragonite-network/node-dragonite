@@ -21,7 +21,7 @@ export const SocketEvent = {
 }
 
 @autobind
-export class DragoniteSocket {
+export abstract class DragoniteSocket {
   remoteHost: string
   remotePort: number
 
@@ -37,6 +37,7 @@ export class DragoniteSocket {
   eventEmitter: EventEmitter = new EventEmitter()
 
   isConnected: boolean = false
+  isAlive: boolean = false
 
   constructor (host: string, port: number) {
     this.remoteHost = host
@@ -46,6 +47,7 @@ export class DragoniteSocket {
     if (!this.isConnected) {
       this.eventEmitter.emit('connect')
       this.isConnected = true
+      this.isAlive = true
     }
   }
   start () {
@@ -60,5 +62,12 @@ export class DragoniteSocket {
   }
   write (chunk: any, cb?: Function) {
     this.stream.write(chunk, cb)
+  }
+  abstract destroy (): void
+  close () {
+    this.sender.sendCloseMessage()
+  }
+  onRemoteClose () {
+    this.destroy()
   }
 }

@@ -83,4 +83,7 @@ export class Resender {
       }
     }
   }
+  destroy () {
+    this.resendList.forEach(r => r.ack())
+  }
 }
