@@ -9,6 +9,9 @@ srv.on(ServerEvent.Connection, (conn: DragoniteServerSocket) => {
   conn.on(SocketEvent.Data, chunk => {
     console.log('server', conn.remotePort, 'received', chunk.toString())
   })
+  conn.on(SocketEvent.Close, () => {
+    console.log('server', conn.remotePort, 'close')
+  })
 })
 
 const cli = new DragoniteClientSocket('localhost', 43210)
@@ -20,5 +23,8 @@ cli.on(SocketEvent.Connect, () => {
 const cli2 = new DragoniteClientSocket('localhost', 43210)
 cli2.on(SocketEvent.Connect, () => {
   console.log('client 2: connected')
-  cli2.write(Buffer.alloc(10000000, 99))
+  cli2.write(Buffer.from('Hello'))
+  setTimeout(() => {
+    cli2.close()
+  }, 1000)
 })

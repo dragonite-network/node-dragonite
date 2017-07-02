@@ -1,4 +1,4 @@
-import { DragoniteSocket } from './Socket'
+import { DragoniteSocket, SocketEvent } from './Socket'
 import { Sender } from './Sender'
 import { ACKer } from './ACKer'
 import { Resender } from './Resender'
@@ -40,6 +40,8 @@ export class DragoniteClientSocket extends DragoniteSocket {
       this.resender.destroy()
       this.acker.destroy()
       this.udp.close()
+
+      this.eventEmitter.emit(SocketEvent.Close)
     }
   }
 }
