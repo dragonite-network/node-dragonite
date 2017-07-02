@@ -11,12 +11,10 @@ export class Sender {
   bufferSizePerMsg: number
   sendSeq: number = 0
   sendSpeed: number = 1 / 20
-  heartbeatInterval: number = 1000
   sendRaw: (buffer: Buffer) => void
   aliveTimer: Timer
-  constructor (socket: DragoniteSocket, heartbeatInterval: number) {
+  constructor (socket: DragoniteSocket) {
     this.socket = socket
-    this.heartbeatInterval = heartbeatInterval
     this.bufferSizePerMsg = this.socket.socketParams.packetSize - DataMessage.headerSize
 
     this.limiter = new Limiter(50)
@@ -29,7 +27,7 @@ export class Sender {
   aliveDetect () {
     this.aliveTimer = setInterval(() => {
       this.sendHeartbeatMessage()
-    }, this.heartbeatInterval)
+    }, this.socket.socketParams.heartbeatIntervalSec * 1000)
   }
   sendReliableMessage (buffer: Buffer): number {
     ReliableMessage.setSequence(buffer, this.sendSeq)
@@ -40,7 +38,16 @@ export class Sender {
     // console.log(ReliableMessage.getSequence(buffer))
   }
   sendHeartbeatMessage () {
-    this.sendReliableMessage(HeartbeatMessage.create())
+    const seq = this.sendReliableMessage(HeartbeatMessage.create())
+    const timeout = setTimeout(() => {
+      this.socket.destroy()
+    }, 2 * this.socket.socketParams.heartbeatIntervalSec * 1000)
+    this.socket.receiver.ackCallbacks.push({
+      receiveSeq: seq,
+      callback: () => {
+        clearTimeout(timeout)
+      }
+    })
   }
   sendDataMessage (buffer: Buffer): Promise<{}> {
     const messages: Buffer[] = []
@@ -76,7 +83,7 @@ export class Sender {
     const closeSeq = this.sendReliableMessage(CloseMessage.create(0))
     this.socket.receiver.ackCallbacks.push({
       receiveSeq: closeSeq,
-      callback: this.socket.onRemoteClose
+      callback: this.socket.destroy
     })
   }
   writeStream (chunk: any, encoding: string, callback: Function) {

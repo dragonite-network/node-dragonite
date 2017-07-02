@@ -1,5 +1,4 @@
 import { autobind } from 'core-decorators'
-import * as UDP from 'dgram'
 import { Sender } from './Sender'
 import { Receiver } from './Receiver'
 import { ACKer } from './ACKer'
@@ -8,6 +7,7 @@ import { RTTController } from './RTT'
 import { SocketParameters, socketParams } from './Paramaters'
 import { Duplex } from 'stream'
 import { EventEmitter } from 'events'
+import { CLOSE_WAIT_RTT_MULT, MIN_CLOSE_WAIT_MS } from './Constants'
 
 export const SocketEvent = {
   Close: 'close',
@@ -66,8 +66,9 @@ export abstract class DragoniteSocket {
   abstract destroy (): void
   close () {
     this.sender.sendCloseMessage()
-  }
-  onRemoteClose () {
-    this.destroy()
+    const waitTime = Math.max(this.rtt.estimatedRTT * CLOSE_WAIT_RTT_MULT, MIN_CLOSE_WAIT_MS)
+    setTimeout(() => {
+      this.destroy()
+    }, waitTime)
   }
 }

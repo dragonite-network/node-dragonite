@@ -13,10 +13,10 @@ export class DragoniteClientSocket extends DragoniteSocket {
   constructor (remoteHost: string, remotePort: number) {
     super(remoteHost, remotePort)
 
-    this.sender = new Sender(this, 1000)
+    this.sender = new Sender(this)
     this.receiver = new Receiver(this)
     this.acker = new ACKer(this)
-    this.resender = new Resender(this, this.socketParams.resendMinDelayMS, this.socketParams.ackIntervalMS)
+    this.resender = new Resender(this)
     this.rtt = new RTTController(this)
 
     this.udp = UDP.createSocket('udp4')

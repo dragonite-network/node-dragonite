@@ -42,12 +42,8 @@ export class Resender {
   socket: DragoniteSocket
   totalMessageCount = 0
   resendList: ResendItem[] = []
-  ackDelayCompensation = 0
-  minResendMS = 0
-  constructor (socket: DragoniteSocket, minResendMS: number, ackDelayCompensation: number) {
+  constructor (socket: DragoniteSocket) {
     this.socket = socket
-    this.minResendMS = minResendMS
-    this.ackDelayCompensation = ackDelayCompensation
   }
   addMessage (buffer: Buffer) {
     this.totalMessageCount++
@@ -59,10 +55,10 @@ export class Resender {
   getNextSendDelay (count: number = 0, timeOffset: number = 0): number {
     const resendMult = count <= MAX_FAST_RESEND_COUNT ? 1
       : Math.min(count - MAX_FAST_RESEND_COUNT + 1, MAX_SLOW_RESEND_MULT)
-    const dRTT = Math.max(DEV_RTT_MULT * this.socket.rtt.devRTT, this.ackDelayCompensation)
+    const dRTT = Math.max(DEV_RTT_MULT * this.socket.rtt.devRTT, this.socket.socketParams.ackIntervalMS)
     let delay = (this.socket.rtt.estimatedRTT + dRTT) * resendMult
-    if (delay < this.minResendMS) {
-      delay = this.minResendMS
+    if (delay < this.socket.socketParams.resendMinDelayMS) {
+      delay = this.socket.socketParams.resendMinDelayMS
     }
     return delay + timeOffset
   }

@@ -1,7 +1,7 @@
 import { DragoniteServerSocket, getConnKey } from './ServerSocket'
 import * as UDP from 'dgram'
 import { autobind } from 'core-decorators'
-import { Message, ReliableMessage } from './Messages'
+import { ACKMessage, Message, MessageType, ReliableMessage } from './Messages'
 import { PROTOCOL_VERSION } from './Constants'
 import { EventEmitter } from 'events'
 
@@ -26,17 +26,20 @@ export class DragoniteServer {
     const connKey = getConnKey(rinfo.address, rinfo.port)
     if (this.connectionMap.has(connKey)) {
       this.connectionMap.get(connKey).receiver.handleMessage(buffer)
-    } else if (Message.getHeader(buffer).version === PROTOCOL_VERSION
-      && ReliableMessage.getSequence(buffer) === 0) {
-      const connection = new DragoniteServerSocket(rinfo.address, rinfo.port)
-      this.connectionMap.set(connKey, connection)
-      connection.sender.sendRaw = (buffer: Buffer) => {
-        this.udp.send(buffer, connection.remotePort, connection.remoteHost)
-      }
-      connection.start()
+    } else if (Message.getHeader(buffer).version === PROTOCOL_VERSION) {
+      if (ReliableMessage.getSequence(buffer) === 0) {
+        const connection = new DragoniteServerSocket(rinfo.address, rinfo.port)
+        this.connectionMap.set(connKey, connection)
+        connection.sender.sendRaw = (buffer: Buffer) => {
+          this.udp.send(buffer, connection.remotePort, connection.remoteHost)
+        }
+        connection.start()
 
-      connection.receiver.handleMessage(buffer)
-      this.eventEmitter.emit('connection', connection)
+        connection.receiver.handleMessage(buffer)
+        this.eventEmitter.emit('connection', connection)
+      } else if (Message.getHeader(buffer).type === MessageType.Close) {
+        this.udp.send(ACKMessage.create(0, [ReliableMessage.getSequence(buffer)]), rinfo.port, rinfo.address)
+      }
     }
   }
   on (event: string, listener: (...args: any[]) => void) {
